@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <RootNamespace>ZenTune.App</RootNamespace>
+    <AssemblyName>ZenTune</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\ZenTune-graph.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Unpackaged, self-contained: one folder with ZenTune.exe, no Store and no runtime install needed (works on LTSC). -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+
+    <!-- Needed when building with the dotnet CLI only (no Visual Studio): generates ZenTune.pri with the compiled XAML.
+         Without it the app closes silently at startup. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+
+    <Version>0.5.0</Version>
+    <Product>ZenTune</Product>
+    <Description>Free, open-source game settings optimizer</Description>
+  </PropertyGroup>
+
+  <!-- The graph icon is built into ZenTune.exe. Both icons are also copied next to it, so the app can switch between them (Advanced -> App icon). -->
+  <ItemGroup>
+    <None Include="Assets\*.ico;Assets\*.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZenTune.Core\ZenTune.Core.csproj" />
+  </ItemGroup>
+
+</Project>

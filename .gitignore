@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+out/
+dist/
+.vs/
+*.user
+*.suo
+
+# My own backups
+*.bak-before-*
+
+# Installers and packaged builds go in GitHub Releases, not in the repo
+*.exe
+*.zip
+*.msix
