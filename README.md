@@ -47,13 +47,21 @@ The app is placed in `out\ZenTune.exe`. It is self-contained and does not need t
 
 ## Roadmap
 
-1. Hardware detection ✅
-2. Find installed games (Steam, Epic), backup and undo ✅
-3. Graphics presets ✅ (Unreal Engine games and Call of Duty; more games next)
-4. Config writers for Modern Warfare 4, Warzone, CS2, The Outer Worlds 1 and 2, Final Fantasy VII Rebirth
-5. Driver settings (G-Sync/FreeSync, V-Sync, Reflex/Anti-Lag)
-6. Pulse: live monitor, popout, tray, logging, optional processor sensors, Measure + Pulse numbers ✅
-7. Community mode with Gemini suggestions: **experimental AI best settings** for Call of Duty ✅ (bring your own free Gemini key; modes Ultra Performance, Performance, Balanced, Quality and Best FPS; backs up first, only writes values the game allows). Next: thumbs-up profiles and more games
+Roadmappet i README er allerede på engelsk. Jeg skrev det på engelsk da jeg oppdaterte det, siden resten av README og appen er på engelsk. Slik står det nå:
+
+> **Done:**
+ 1. Hardware detection ✅
+ 2. Find installed games (Steam, Epic), backup and undo ✅
+ 3. Graphics presets ✅ (Unreal Engine games and Call of Duty)
+ 4. Config writers for Modern Warfare 4 / Warzone, CS2, The Outer Worlds 1 and 2, Final Fantasy VII Rebirth ✅
+ 5. Pulse: live monitor, popout, tray, logging, optional processor sensors ✅
+ 6. Experimental AI best settings for Call of Duty ✅
+ 7. Saves: backup and restore for any game, one folder per PC, optional auto-backup, schedule and notifications ✅
+ 8. Cloud backup to OneDrive, Google Drive, Dropbox and Elkjøp Cloud, with optional encryption ✅
+ 9. Measure: verdict, key numbers and a frame time graph for before/after recordings ✅
+ 10. Settings and color themes ✅
+
+ **Next:** Measure linked to presets and AI profiles, thumbs-up profiles and AI for more games, more games with their own settings writers, driver settings, backup checks and zip export, testing on more PCs.
 
 ## License
 
