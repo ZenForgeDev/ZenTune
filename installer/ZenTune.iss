@@ -38,3 +38,7 @@ Name: "{autodesktop}\ZenTune"; Filename: "{app}\ZenTune.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\ZenTune.exe"; Description: "Start ZenTune"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+; Remove the "Start with Windows" task if the user switched it on. If it does not exist or cannot be removed, nothing happens.
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""\ZenTune\ZenTune autostart"" /F"; Flags: runhidden; RunOnceId: "RemoveZenTuneAutostart"

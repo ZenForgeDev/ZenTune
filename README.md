@@ -14,11 +14,14 @@ Version 0.5 (beta). Expect bugs, and please report them (Feedback page → Colle
   - Old files: delete shader caches and game folders left by uninstalled Steam games
   - Graphics presets (Competitive, Balanced, Quality, Ultra, Handheld) tuned to your graphics card, video memory and screen, for Unreal Engine games and Call of Duty. Every preset shows what changes and backs up your settings first
 
-- **Measure:** records the FPS and frame times of a running game with PresentMon (Intel, MIT license; downloaded once and checked with a SHA-256 checksum), then compares two recordings, for example before and after a preset. It adds no overlay and nothing inside the game. Optionally it saves how busy the processor and graphics card were during the recording (from Pulse), and **Compare with AI** explains the difference in plain words (needs your own free Gemini key)
+- **Saves:** back up and restore the save games of any game. ZenTune finds saves with the open [Ludusavi manifest](https://github.com/mtkennerly/ludusavi-manifest) (MIT license, built from PCGamingWiki and downloaded once), and you can add a game by hand with its save folder. Backups are kept in a `ZenTune-backup` folder with one folder per PC (you choose where). Restore puts the files back where they came from, asks first, and makes a safety backup of the current save before it overwrites anything. Optional, all off by default: back up automatically when a game closes (ZenTune only reads the list of running programs), back up all games on a schedule, and a Windows notification when it backs up by itself
+- **Cloud:** upload your backups to OneDrive, Google Drive, Dropbox or Elkjøp Cloud, to one or several accounts at once, with optional encryption. It uses [rclone](https://rclone.org) (MIT license), which ZenTune downloads once and checks with a SHA-256 checksum. ZenTune only copies files up; it never deletes anything in your cloud. Your login stays in a file on your own PC
+- **Measure:** records the FPS and frame times of a running game with PresentMon (Intel, MIT license; downloaded once and checked with a SHA-256 checksum), then compares two recordings, for example before and after a preset. You get a one-line verdict, four key numbers and a graph of the frame times, so you can see when the stutters happen. It adds no overlay and nothing inside the game. Optionally it saves how busy the processor and graphics card were during the recording (from Pulse), and **Compare with AI** explains the difference in plain words (needs your own free Gemini key)
 - **Pulse:** a live performance monitor in plain words, like Task Manager's Performance tab but easier to read: processor, graphics card, graphics card temperature, memory, video memory, disk and network with a graph of the last minute, every processor thread, and the programs that use the most processor, graphics card and memory. It has a small always-on-top popout window, a tray icon with a right-click menu (optional alerts when something is hot or full), and a log that saves the numbers as text files in `Documents\Pulse`. Optional **sensors** (off by default) add processor temperature, speed and power through the PawnIO driver and the LibreHardwareMonitor library
 - **Handheld:** battery and charger status, Windows power mode, a graphics memory check for ROG Ally, Legion Go and Steam Deck, the Handheld preset for all games at once (40 FPS on battery, 60 on the charger) and AMD tips
 - **Feedback:** collects a small zip file with hardware and settings info (nothing personal) that you can send to the developer
-- **Advanced:** Windows tweaks from Chris Titus Tech's WinUtil (gaming, privacy, dark mode, Ultimate Performance), a restore point button, a PC cleaner and a one-click O&O ShutUp10++ download. Every tweak records the old values and can be undone
+- **Settings:** a color theme for the whole app (Default, Gamer, Vibrant, Ocean, Sunset, Crimson), start ZenTune with Windows and keep it in the tray, and your Gemini key and model
+- **Advanced:** Windows tweaks from Chris Titus Tech's WinUtil (gaming, privacy, dark mode, Ultimate Performance), a restore point button, faster startup apps, a PC cleaner and a one-click O&O ShutUp10++ download. Every tweak records the old values and can be undone
 
 ## Anti-cheat
 
@@ -28,7 +31,7 @@ ZenTune never injects anything into games and draws nothing in them. Pulse, Meas
 
 ZenTune is not code-signed and it will not be, so Windows SmartScreen may say "Windows protected your PC" and show an unknown publisher the first time you run it. That is expected for a free open-source app without a paid certificate. Press **More info → Run anyway** if you trust where you got it. The source code is open (GPL-3.0), so you can read it and build it yourself.
 
-ZenTune keeps its data in `%LOCALAPPDATA%\ZenTune` (backups, the list of changes, crash log).
+ZenTune keeps its data in `%LOCALAPPDATA%\ZenTune` (settings backups, the list of changes, crash log). Save game backups are in the `ZenTune-backup` folder you chose (by default in Documents).
 
 ## Build
 
@@ -56,7 +59,7 @@ The app is placed in `out\ZenTune.exe`. It is self-contained and does not need t
 
 GPL-3.0
 
-Pulse sensors use [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (MPL-2.0) and, if you install it, the PawnIO driver by namazso. Measure uses [PresentMon](https://github.com/GameTechDev/PresentMon) (MIT).
+Pulse sensors use [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (MPL-2.0) and, if you install it, the PawnIO driver by namazso. Measure uses [PresentMon](https://github.com/GameTechDev/PresentMon) (MIT). Saves uses the [Ludusavi manifest](https://github.com/mtkennerly/ludusavi-manifest) (MIT) and [YamlDotNet](https://github.com/aaubry/YamlDotNet) (MIT). Cloud uses [rclone](https://github.com/rclone/rclone) (MIT).
 
 ## Credits
 

@@ -1,12 +1,16 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
+using ZenTune.Core.Advanced;
 
 namespace ZenTune.App;
 
 public partial class App : Application
 {
     private Window? _window;
+
+    /// <summary>The main window (used by Settings to restart after a theme change).</summary>
+    internal static MainWindow? MainWin { get; private set; }
 
     public App()
     {
@@ -37,8 +41,25 @@ public partial class App : Application
     {
         try
         {
-            _window = new MainWindow();
-            _window.Activate();
+            // A second copy only brings the first one to the front
+            if (!SingleInstance.TryStart())
+            {
+                Exit();
+                return;
+            }
+
+            // Color theme (accent colors) must be set before any control is created
+            AppTheme.Load();
+            AppTheme.ApplyResources();
+
+            var main = new MainWindow();
+            _window = main;
+            MainWin = main;
+            main.Activate();
+
+            // Started by Windows at sign-in: wait quietly in the tray
+            if (Environment.GetCommandLineArgs().Any(a => string.Equals(a, AppAutoStart.TrayArg, StringComparison.OrdinalIgnoreCase)))
+                main.StartHidden();
         }
         catch (Exception ex)
         {

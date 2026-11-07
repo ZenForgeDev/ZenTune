@@ -39,6 +39,10 @@ internal sealed partial class MeasurePage : UserControl
     private readonly HashSet<string> _selected = new();
     private List<CaptureRecord> _records = [];
 
+    // The recording name suggests itself: Before, then After, then Test 3... until the user types their own
+    private bool _labelAuto = true;
+    private bool _settingLabel;
+
     // AI answers for a pair of recordings, so ticking the same two again does not use another request
     private readonly Dictionary<string, MeasureAnalysis> _aiCache = new();
 
@@ -52,6 +56,12 @@ internal sealed partial class MeasurePage : UserControl
             "ZenTune adds no overlay and nothing inside the game: it reads Windows' own graphics events with PresentMon.");
         _status = status;
 
+        _label.TextChanged += (_, _) =>
+        {
+            if (!_settingLabel) _labelAuto = false;
+        };
+        _process.SelectionChanged += (_, _) => UpdateAutoLabel();
+
         _duration.Items.Add("30 seconds");
         _duration.Items.Add("60 seconds");
         _duration.Items.Add("120 seconds");
@@ -63,9 +73,12 @@ internal sealed partial class MeasurePage : UserControl
         // Record card
         var form = new StackPanel { Spacing = 12 };
         form.Children.Add(new TextBlock { Text = "Record a game", Style = Ui.StyleRes("SubtitleTextBlockStyle") });
-        form.Children.Add(Ui.Secondary(
-            "1. Start your game and get into the place you want to measure (the same place each time makes the numbers comparable). " +
-            "2. Press Refresh and choose the game. 3. Press Record, then switch to the game. Recording starts 10 seconds later."));
+        var steps = new StackPanel { Spacing = 2 };
+        steps.Children.Add(Ui.Secondary("1. Start your game and go to the spot you want to measure. Use the same spot every time."));
+        steps.Children.Add(Ui.Secondary("2. Press Refresh and choose the game below."));
+        steps.Children.Add(Ui.Secondary("3. Press Record and switch to the game. Recording starts 10 seconds later."));
+        steps.Children.Add(Ui.Secondary("Record once, change a setting, record again. ZenTune names them Before and After and compares them."));
+        form.Children.Add(steps);
 
         var pick = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         pick.Children.Add(_process);
@@ -91,14 +104,16 @@ internal sealed partial class MeasurePage : UserControl
         body.Children.Add(Ui.SectionHeader("Recordings"));
         body.Children.Add(_list);
 
-        body.Children.Add(Ui.Secondary(
+        var help = new StackPanel { Spacing = 8 };
+        help.Children.Add(Ui.Secondary(
             "How to read the numbers: Average FPS is frames divided by time. 1% low is the average FPS of the slowest 1% of frames (0.1% low: the slowest 0.1%); " +
             "the closer it is to the average, the smoother the game feels. 99th percentile means 99% of frames were faster than that. " +
             "A stutter is a frame that took more than twice the median frame time."));
-        body.Children.Add(Ui.Secondary(
+        help.Children.Add(Ui.Secondary(
             "Good to know: PresentMon counts the frames the game hands to Windows. With frame generation (DLSS, FSR, AFMF) different games count real or generated frames, " +
             "so compare recordings made with the same settings. ZenTune does not record Valorant or Delta Force because of their anti-cheat. " +
             "PresentMon reads Windows' events and does not touch the game, but ZenTune has not tested it against every anti-cheat."));
+        body.Children.Add(AdvancedPage.Section("How to read the numbers", "What 1% low, 99th percentile and stutters mean.", help));
 
         Content = root;
 
@@ -199,6 +214,7 @@ internal sealed partial class MeasurePage : UserControl
             _record.IsEnabled = true;
         }
 
+        _labelAuto = true;
         await LoadListAsync();
     }
 
@@ -216,8 +232,22 @@ internal sealed partial class MeasurePage : UserControl
         }
 
         _selected.RemoveWhere(id => _records.All(r => r.Id != id));
+        UpdateAutoLabel();
         RenderList();
         RenderCompare();
+    }
+
+    private void UpdateAutoLabel()
+    {
+        if (!_labelAuto) return;
+
+        string exe = (_process.SelectedItem as ProcItem)?.Exe ?? "";
+        int n = _records.Count(r => string.Equals(r.Process, exe, StringComparison.OrdinalIgnoreCase));
+        string suggestion = n == 0 ? "Before" : n == 1 ? "After" : $"Test {n + 1}";
+
+        _settingLabel = true;
+        _label.Text = suggestion;
+        _settingLabel = false;
     }
 
     private void RenderList()
@@ -229,8 +259,17 @@ internal sealed partial class MeasurePage : UserControl
             return;
         }
 
-        foreach (var record in _records)
-            _list.Children.Add(RecordRow(record));
+        foreach (var group in _records.GroupBy(r => r.Process, StringComparer.OrdinalIgnoreCase))
+        {
+            _list.Children.Add(new TextBlock
+            {
+                Text = $"{group.Key} · {group.Count()}",
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 8, 0, 0),
+            });
+            foreach (var record in group)
+                _list.Children.Add(RecordRow(record));
+        }
     }
 
     private UIElement RecordRow(CaptureRecord record)
@@ -270,7 +309,10 @@ internal sealed partial class MeasurePage : UserControl
             FontWeight = FontWeights.SemiBold,
             TextWrapping = TextWrapping.Wrap,
         });
-        text.Children.Add(Ui.Secondary(
+        text.Children.Add(Ui.Secondary($"{s.AvgFps:0} FPS · 1% low {s.Low1Fps:0} · {s.Stutters} stutters"));
+
+        var details = new StackPanel { Spacing = 2, Visibility = Visibility.Collapsed };
+        details.Children.Add(Ui.Secondary(
             $"{s.AvgFps:0} FPS average · 1% low {s.Low1Fps:0} · 0.1% low {s.Low01Fps:0} · 99th percentile {s.P99Ms:0.0} ms · " +
             $"{s.Stutters} stutters · {s.Seconds:0} s, {s.Frames} frames"));
         if (record.Pulse is { } pulse)
@@ -279,8 +321,47 @@ internal sealed partial class MeasurePage : UserControl
             if (pulse.GpuAverage is double gpuAverage) parts.Add($"graphics card {gpuAverage:0} % (highest {pulse.GpuHighest ?? gpuAverage:0} %)");
             if (pulse.GpuTemperatureHighest is double gpuTemp) parts.Add($"graphics card up to {gpuTemp:0} °C");
             if (pulse.CpuTemperatureHighest is double cpuTemp) parts.Add($"processor up to {cpuTemp:0} °C");
-            text.Children.Add(Ui.Secondary("While recording: " + string.Join(" · ", parts)));
+            details.Children.Add(Ui.Secondary("While recording: " + string.Join(" · ", parts)));
         }
+
+        var more = new HyperlinkButton { Content = "Details", Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
+        more.Click += (_, _) =>
+        {
+            bool open = details.Visibility == Visibility.Visible;
+            details.Visibility = open ? Visibility.Collapsed : Visibility.Visible;
+            more.Content = open ? "Details" : "Hide details";
+        };
+        text.Children.Add(details);
+        text.Children.Add(more);
+
+        var rename = Ui.IconButton("\uE70F", "Rename");
+        rename.Click += async (_, _) =>
+        {
+            var box = new TextBox { Text = record.Label, MinWidth = 280 };
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Rename recording",
+                Content = box,
+                PrimaryButtonText = "Save",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                RequestedTheme = ElementTheme.Dark,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+            var name = box.Text.Trim();
+            if (name.Length == 0) return;
+            try
+            {
+                await Task.Run(() => Captures.Rename(record, name));
+            }
+            catch (Exception ex)
+            {
+                _status.Show(InfoBarSeverity.Error, "Could not rename it", ex.Message);
+            }
+            await LoadListAsync();
+        };
 
         var grid = new Grid { ColumnSpacing = 12 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -289,9 +370,11 @@ internal sealed partial class MeasurePage : UserControl
         grid.Children.Add(pick);
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
-        Grid.SetColumn(delete, 2);
-        delete.VerticalAlignment = VerticalAlignment.Center;
-        grid.Children.Add(delete);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        actions.Children.Add(rename);
+        actions.Children.Add(delete);
+        Grid.SetColumn(actions, 2);
+        grid.Children.Add(actions);
 
         return Ui.CardFrame(grid, new Thickness(16, 10, 20, 10));
     }
@@ -397,7 +480,20 @@ internal sealed partial class MeasurePage : UserControl
                 Metric("Processor temperature, highest (°C)", cpuTempA, cpuTempB, "0", null);
         }
 
-        _compare.Children.Add(Ui.CardFrame(grid));
+        _compare.Children.Add(CompareSummary(a, b));
+
+        var graphHost = new StackPanel();
+        _compare.Children.Add(graphHost);
+        _ = ShowGraphAsync(a, b, graphHost);
+
+        _compare.Children.Add(new Expander
+        {
+            Header = new TextBlock { Text = "All numbers", FontWeight = FontWeights.SemiBold },
+            Content = grid,
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        });
 
         var notes = new List<string>();
         if (!string.Equals(a.Process, b.Process, StringComparison.OrdinalIgnoreCase))
@@ -409,6 +505,120 @@ internal sealed partial class MeasurePage : UserControl
             _compare.Children.Add(Ui.Secondary(n));
 
         AddAiSection(a, b);
+    }
+
+    // ---------------------------------------------------------------- Frame time graph
+
+    /// <summary>Reads the frame times of both recordings and draws them. The graph is an extra: if a file is missing nothing is shown.</summary>
+    private static async Task ShowGraphAsync(CaptureRecord a, CaptureRecord b, StackPanel host)
+    {
+        try
+        {
+            var (fa, fb) = await Task.Run(() => (FrameStats.ReadFrameTimes(a.CsvPath), FrameStats.ReadFrameTimes(b.CsvPath)));
+
+            // The comparison may have been redrawn (other recordings ticked) while the files were read
+            if (host.Parent is null || fa.Count < 2 || fb.Count < 2) return;
+
+            host.Children.Add(Ui.CardFrame(new FrameGraph(fa, fb, $"{a.Label} · {a.When:HH:mm}", $"{b.Label} · {b.When:HH:mm}")));
+        }
+        catch
+        {
+            // no graph
+        }
+    }
+
+    // ---------------------------------------------------------------- Compare summary
+
+    private static double Pct(double from, double to) => from > 0 ? (to - from) / from * 100.0 : 0;
+
+    /// <summary>A one-line verdict and four big numbers: what changed between the two recordings.</summary>
+    private static UIElement CompareSummary(CaptureRecord a, CaptureRecord b)
+    {
+        var good = new List<string>();
+        var bad = new List<string>();
+
+        void Judge(double pct, bool higherIsBetter, string better, string worse)
+        {
+            if (Math.Abs(pct) < 3) return;
+            bool isBetter = higherIsBetter ? pct > 0 : pct < 0;
+            string text = (isBetter ? better : worse).Replace("{p}", Math.Abs(pct).ToString("0"));
+            (isBetter ? good : bad).Add(text);
+        }
+
+        Judge(Pct(a.Stats.AvgFps, b.Stats.AvgFps), true, "{p}% more FPS", "{p}% fewer FPS");
+        if (Math.Max(a.Stats.Low1Fps, b.Stats.Low1Fps) >= 10)
+            Judge(Pct(a.Stats.Low1Fps, b.Stats.Low1Fps), true, "{p}% higher 1% lows", "{p}% lower 1% lows");
+        Judge(Pct(a.Stats.StuttersPerMinute, b.Stats.StuttersPerMinute), false, "{p}% fewer stutters", "{p}% more stutters");
+
+        string headline;
+        string brush;
+        if (good.Count == 0 && bad.Count == 0)
+        {
+            headline = "About the same";
+            brush = "TextFillColorSecondaryBrush";
+        }
+        else if (bad.Count == 0)
+        {
+            headline = $"\"{b.Label}\" is better: " + string.Join(", ", good);
+            brush = "SystemFillColorSuccessBrush";
+        }
+        else if (good.Count == 0)
+        {
+            headline = $"\"{b.Label}\" is worse: " + string.Join(", ", bad);
+            brush = "SystemFillColorCautionBrush";
+        }
+        else
+        {
+            headline = "Mixed: " + string.Join(", ", good) + ", but " + string.Join(", ", bad);
+            brush = "AccentTextFillColorPrimaryBrush";
+        }
+
+        var stack = new StackPanel { Spacing = 12 };
+
+        var head = new StackPanel { Spacing = 4 };
+        head.Children.Add(new TextBlock
+        {
+            Text = headline,
+            Style = Ui.StyleRes("SubtitleTextBlockStyle"),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Ui.Res(brush),
+        });
+        head.Children.Add(Ui.Secondary($"\"{a.Label}\" compared with \"{b.Label}\" (the second one is the newer recording)."));
+        stack.Children.Add(Ui.CardFrame(head));
+
+        var tiles = new Grid { ColumnSpacing = 12 };
+        for (int i = 0; i < 4; i++)
+            tiles.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        void Tile(int column, string title, double va, double vb, string format, bool higherIsBetter)
+        {
+            double pct = Pct(va, vb);
+            bool same = Math.Abs(pct) < 3;
+            bool isBetter = higherIsBetter ? pct > 0 : pct < 0;
+
+            var tile = new StackPanel { Spacing = 2 };
+            tile.Children.Add(Ui.Secondary(title));
+            tile.Children.Add(new TextBlock { Text = vb.ToString(format), Style = Ui.StyleRes("TitleTextBlockStyle") });
+            tile.Children.Add(Ui.Secondary("was " + va.ToString(format)));
+            tile.Children.Add(new TextBlock
+            {
+                Text = same ? "about the same" : $"{pct:+0;-0}%",
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Ui.Res(same ? "TextFillColorSecondaryBrush" : isBetter ? "SystemFillColorSuccessBrush" : "SystemFillColorCautionBrush"),
+            });
+
+            var frame = Ui.CardFrame(tile, new Thickness(16, 14, 16, 14));
+            Grid.SetColumn(frame, column);
+            tiles.Children.Add(frame);
+        }
+
+        Tile(0, "Average FPS", a.Stats.AvgFps, b.Stats.AvgFps, "0", true);
+        Tile(1, "1% low FPS", a.Stats.Low1Fps, b.Stats.Low1Fps, "0", true);
+        Tile(2, "Stutters per minute", a.Stats.StuttersPerMinute, b.Stats.StuttersPerMinute, "0.0", false);
+        Tile(3, "99th percentile (ms)", a.Stats.P99Ms, b.Stats.P99Ms, "0.0", false);
+        stack.Children.Add(tiles);
+
+        return stack;
     }
 
     // ---------------------------------------------------------------- Compare with AI

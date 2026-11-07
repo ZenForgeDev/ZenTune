@@ -83,10 +83,12 @@ public static class GameCatalog
         new GameDefinition
         {
             Id = "mw4",
-            Name = "Call of Duty: Modern Warfare 4",
-            Engine = "IW engine · runs inside Call of Duty HQ",
-            // 1938090 = Call of Duty (HQ), which MW4 installs into; 4435490 = MW4's own store page
-            SteamAppIds = [1938090, 4435490],
+            Name = "Call of Duty: Modern Warfare 4 / Warzone",
+            Engine = "IW engine · runs inside Call of Duty HQ · Warzone shares these settings",
+            // 1938090 = Call of Duty (HQ), which MW4 installs into; 4435490 = MW4's own store page;
+            // 1962663 = Call of Duty: Warzone (moved here from the Black Ops 7 card, 7 Nov 2026).
+            // NOT yet confirmed on disk that Warzone writes to cod26 files: check which file changes after a Warzone settings change.
+            SteamAppIds = [1938090, 4435490, 1962663],
             SteamFolderHints = ["Call of Duty"],
             // MW4 is "cod26" in its file names. Graphics are in s.1.0.cod26.txt; gameplay settings, presets and
             // key binds are in the folder named after your account (and its SteamCloud folder on Steam).
@@ -107,12 +109,13 @@ public static class GameCatalog
         new GameDefinition
         {
             Id = "cod",
-            Name = "Call of Duty: Black Ops 7 / Warzone",
-            Engine = "IW engine · Black Ops 7 and Warzone share settings",
-            // 1938090 = Call of Duty (HQ), 1962663 = Call of Duty: Warzone
-            SteamAppIds = [1938090, 1962663],
+            Name = "Call of Duty: Black Ops 7",
+            Engine = "IW engine · Black Ops 7 (cod25)",
+            // 1938090 = Call of Duty (HQ). Warzone (1962663) now lives on the MW4 card.
+            // The id stays "cod" so saved AI profiles and share codes made earlier still match this card.
+            SteamAppIds = [1938090],
             SteamFolderHints = ["Call of Duty"],
-            // cod25 = Black Ops 7 and Warzone, cod24 = Black Ops 6. MW4 (cod26) has its own entry above and its own files.
+            // cod25 = Black Ops 7, cod24 = Black Ops 6. MW4 (cod26) has its own entry above and its own files.
             // Do NOT add cod26 here: the tuner writes to every file a game lists, so this card would then change MW4's settings too.
             // (Checked on a real PC: s.1.0.cod25.txt0/txt1 and s.1.0.cod26.txt exist side by side with different values.)
             Config =

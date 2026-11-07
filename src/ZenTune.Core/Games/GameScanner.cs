@@ -155,7 +155,7 @@ public static class GameScanner
     }
 
     /// <summary>Names of the .exe files in the game folder. Used only to see if the game is running.</summary>
-    private static List<string> FindExecutables(string installDir)
+    internal static List<string> FindExecutables(string installDir)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!Directory.Exists(installDir)) return [];
