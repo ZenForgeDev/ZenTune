@@ -88,15 +88,15 @@ internal sealed partial class ChecksPage : UserControl
         AddGroup("Needs attention", checks.Where(c => c.Status == CheckStatus.Warning));
         AddGroup("Tips", checks.Where(c => c.Status == CheckStatus.Info));
 
+        AddGroup("Looks good", checks.Where(c => c.Status == CheckStatus.Good));
+
         // Driver shader cache
         _results.Children.Add(Ui.SectionHeader("Shader cache"));
         _results.Children.Add(DriverCacheRow(driverCache));
 
-        AddGroup("Looks good", checks.Where(c => c.Status == CheckStatus.Good));
-
         if (changes.Count > 0)
         {
-            _results.Children.Add(Ui.SectionHeader("Changes made by ZenTune"));
+            _results.Children.Add(Ui.SectionHeader("Changes made by ZenTune (you can undo them)"));
             foreach (var change in changes)
                 _results.Children.Add(ChangeRow(change));
         }

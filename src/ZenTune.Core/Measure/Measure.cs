@@ -253,6 +253,19 @@ public static class Captures
         try { if (File.Exists(record.CsvPath)) File.Delete(record.CsvPath); } catch { }
     }
 
+    public static void Rename(CaptureRecord record, string label)
+    {
+        lock (Gate)
+        {
+            var list = Load();
+            var found = list.FirstOrDefault(r => r.Id == record.Id);
+            if (found is null) return;
+            found.Label = label;
+            Save(list);
+        }
+        record.Label = label;
+    }
+
     // ---------------------------------------------------------------- Recording
 
     /// <summary>

@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="ZenTune">
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="48" />
             <RowDefinition Height="*" />
@@ -29,6 +29,7 @@
                         OpenPaneLength="220"
                         SelectionChanged="Nav_SelectionChanged">
             <NavigationView.MenuItems>
+                <NavigationViewItemHeader Content="System" />
                 <NavigationViewItem Content="Your PC" Tag="pc">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE7F8;" />
@@ -39,6 +40,17 @@
                         <FontIcon Glyph="&#xE95E;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Pulse" Tag="pulse">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE945;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Handheld" Tag="handheld">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE990;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemHeader Content="Games" />
                 <NavigationViewItem Content="Games" Tag="games">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE7FC;" />
@@ -49,21 +61,27 @@
                         <FontIcon Glyph="&#xE9D9;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Pulse" Tag="pulse">
+                <NavigationViewItemHeader Content="Backup" />
+                <NavigationViewItem Content="Saves" Tag="saves">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE945;" />
+                        <FontIcon Glyph="&#xE74E;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Cloud" Tag="cloud">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE753;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Content="Handheld" Tag="handheld">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE990;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
                 <NavigationViewItem Content="Feedback" Tag="feedback">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8BD;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Settings" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Advanced" Tag="advanced">

@@ -27,7 +27,7 @@ if (-not (Test-Path out\ZenTune.pri)) {
 }
 
 if (-not (Test-Path out\Assets\ZenTune-graph.ico)) {
-    Write-Host "Warning: out\Assets\ZenTune-graph.ico is missing. The app icon switch will not work." -ForegroundColor Yellow
+    Write-Host "Warning: out\Assets\ZenTune-graph.ico is missing. The title bar icon will be missing." -ForegroundColor Yellow
 }
 
 Write-Host "Done: out\ZenTune.exe" -ForegroundColor Green

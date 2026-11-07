@@ -23,13 +23,8 @@ internal sealed partial class AdvancedPage : UserControl
     public AdvancedPage()
     {
         var (root, body, status) = Ui.Page("Advanced",
-            "ZenTune's own settings, plus Windows tweaks, a PC cleaner and extra tools. Everything that changes Windows can be undone.");
+            "Windows tweaks, startup apps, a PC cleaner and extra tools. Everything that changes Windows can be undone.");
         _status = status;
-
-        // ZenTune's own settings first, then everything that changes Windows.
-        body.Children.Add(Ui.SectionHeader("ZenTune"));
-        body.Children.Add(Section("App icon", "Choose the icon for the window, taskbar and shortcuts.", IconSection()));
-        body.Children.Add(Section("Gemini AI", "Your API key and which Gemini models ZenTune may use.", GeminiSection()));
 
         body.Children.Add(Ui.SectionHeader("Windows"));
         body.Children.Add(new InfoBar
@@ -544,7 +539,7 @@ internal sealed partial class AdvancedPage : UserControl
     // ---------------------------------------------------------------- Layout
 
     /// <summary>A collapsed section: title and one line of explanation, content opens on click.</summary>
-    private static Expander Section(string title, string summary, UIElement content)
+    internal static Expander Section(string title, string summary, UIElement content)
     {
         var header = new StackPanel { Spacing = 2, Padding = new Thickness(0, 6, 0, 6) };
         header.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold });

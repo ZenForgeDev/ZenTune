@@ -14,3 +14,9 @@ dist/
 *.exe
 *.zip
 *.msix
+
+# Save game backups made by the Saves page (personal, never push these)
+/Saves/
+
+# Folder with my old backups
+/old/
