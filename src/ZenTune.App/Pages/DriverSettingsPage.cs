@@ -243,8 +243,35 @@ internal sealed partial class DriverSettingsPage : UserControl
             DriverOption? option = label == defaultLabel ? null : setting.Options.First(o => o.Label == label);
             combo.IsEnabled = false;
             await ApplyNvidiaAsync(setting, option, exe);
+            if (setting.Id == NvidiaCatalog.VrrMode && option is { Value: 1 or 2 })
+                await EnsureGSyncActiveAsync();
             combo.IsEnabled = true;
         };
+
+        if (setting.Id == NvidiaCatalog.VrrMode && setting.Custom is null)
+        {
+            // G-Sync: an Apply button that switches on the driver's per-monitor switch (see EnsureGSyncActiveAsync)
+            var apply = new Button { Content = "Apply", VerticalAlignment = VerticalAlignment.Center };
+            apply.Click += async (_, _) =>
+            {
+                // Apply only makes sense with G-Sync switched on in the list
+                bool wantsOn = combo.SelectedItem is string chosen &&
+                    setting.Options.Any(o => o.Label == chosen && o.Value is 1 or 2);
+                if (!wantsOn)
+                {
+                    _status.Show(InfoBarSeverity.Informational, "Choose G-Sync first",
+                        "Pick Fullscreen only or Fullscreen and windowed in the list, then press Apply.");
+                    return;
+                }
+                apply.IsEnabled = false;
+                await EnsureGSyncActiveAsync(manual: true);
+                apply.IsEnabled = true;
+            };
+            var gsyncPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+            gsyncPanel.Children.Add(combo);
+            gsyncPanel.Children.Add(apply);
+            return FrameRow(setting.Title, setting.Help, gsyncPanel);
+        }
 
         if (setting.Custom is not { } range)
             return FrameRow(setting.Title, setting.Help, combo);
@@ -340,6 +367,52 @@ internal sealed partial class DriverSettingsPage : UserControl
         {
             _status.Show(InfoBarSeverity.Error, "Could not change the NVIDIA setting", ex.Message);
             await ReloadAfterAsync(exe); // show what the driver really has
+        }
+    }
+
+    /// <summary>
+    /// The driver also has an on/off switch per monitor, which is off after a fresh driver install. Without it
+    /// G-Sync stays off whatever the settings say. Asks first, then turns it on and restarts the graphics driver.
+    /// </summary>
+    private async Task EnsureGSyncActiveAsync(bool manual = false)
+    {
+        try
+        {
+            var monitors = await Task.Run(NvidiaMonitorVrr.Read);
+            // The registry key needs admin rights to read, so ZenTune often cannot see the switch. Then only the Apply
+            // button goes on (the admin helper checks everything itself); choosing a value never asks by itself.
+            if (monitors.Count == 0 && !manual) return;
+            if (monitors.Count > 0 && !NvidiaMonitorVrr.NeedsActivation(monitors))
+            {
+                if (manual) _status.Show(InfoBarSeverity.Success, "Already on",
+                    "The driver's G-Sync switch is already on for your monitors. Choose Fullscreen only or Fullscreen and windowed above if you have not.");
+                return;
+            }
+
+            if (!await Ui.ConfirmAsync(XamlRoot, "Switch G-Sync on for your monitors?",
+                    "The NVIDIA driver keeps its own on/off switch for each monitor, and it is off after a fresh driver install. " +
+                    "ZenTune can turn it on, the same way the Apply button on the NVIDIA Control Panel's G-Sync page does.\n\n" +
+                    "Windows will ask for admin rights once. Your screens go black for a second while the graphics driver restarts, so save anything open first.",
+                    "Turn on"))
+            {
+                _status.Show(InfoBarSeverity.Warning, "G-Sync is saved, but not active yet",
+                    "The driver's switch for your monitor is still off. Choose the setting again to turn it on, or press Apply on the NVIDIA Control Panel's G-Sync page.");
+                return;
+            }
+
+            string? error = await NvidiaMonitorVrr.SetAsync(true);
+            if (error is not null)
+            {
+                _status.Show(InfoBarSeverity.Warning, "G-Sync is saved, but not active yet", error);
+                return;
+            }
+            await NvidiaMonitorVrr.RestartGraphicsDriver();
+            _status.Show(InfoBarSeverity.Success, "G-Sync is on",
+                "The driver's switch for your monitors is on and the graphics driver was restarted. It also needs G-Sync switched on in the monitor's own menu.");
+        }
+        catch (Exception ex)
+        {
+            _status.Show(InfoBarSeverity.Error, "Could not switch G-Sync on", ex.Message);
         }
     }
 

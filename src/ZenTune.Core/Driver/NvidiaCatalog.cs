@@ -28,6 +28,9 @@ public sealed record DriverSetting(
 public static class NvidiaCatalog
 {
     public const uint VrrMode = 0x1194F158;
+    public const uint VrrFeature = 0x1094F157;      // "Toggle the VRR global feature"
+    public const uint VrrRequestState = 0x1094F1F7; // "VRR requested state"
+    public const uint VrrAppOverride = 0x10A879CF;  // "G-SYNC" (monitor technology)
     public const uint VSync = 0x00A879CF;
     public const uint PreRender = 0x007BA09E;
     public const uint Frl = 0x10835002;
@@ -47,15 +50,26 @@ public static class NvidiaCatalog
     private static DriverOption[] Fps(params uint[] values) =>
         values.Select(v => new DriverOption(v == 0 ? "Off (no limit)" : $"{v} FPS", v)).ToArray();
 
+    /// <summary>The extra values the Control Panel sets when G-Sync is switched on: feature on, requested mode, and "allow" instead of fixed refresh.</summary>
+    private static DriverWrite[] GSyncOn(uint requestedState) =>
+    [
+        new DriverWrite(VrrFeature, 1),
+        new DriverWrite(VrrRequestState, requestedState),
+        new DriverWrite(VrrAppOverride, 0),
+    ];
+
     public static readonly IReadOnlyList<DriverSetting> All =
     [
+        // Verified by comparing NVIDIA's driver database before and after the Control Panel's Apply button:
+        // Apply sets these four values together, so ZenTune writes them together too.
         new(VrrMode, GroupSync, "G-Sync / variable refresh rate",
-            "Turns G-Sync on from the driver, without the NVIDIA Control Panel. Needs a G-Sync or G-Sync Compatible monitor with the feature switched on in the monitor's own menu. 'Fullscreen and windowed' also covers borderless games and apps.",
+            "Turns G-Sync on in the driver without the NVIDIA Control Panel, by setting the same driver values as the Control Panel's Apply button. Needs a G-Sync or G-Sync Compatible monitor with the feature switched on in the monitor's own menu. 'Fullscreen and windowed' also covers borderless games and apps. On a fresh driver install ZenTune asks once to also switch on the driver's per-monitor G-Sync switch (needs admin, the screens go black for a second).",
             [
                 new("Off", 0),
-                new("Fullscreen only", 1),
-                new("Fullscreen and windowed", 2),
-            ]),
+                new("Fullscreen only", 1, GSyncOn(1)),
+                new("Fullscreen and windowed", 2, GSyncOn(2)),
+            ],
+            Companions: [VrrFeature, VrrRequestState, VrrAppOverride]),
 
         new(VSync, GroupSync, "V-Sync",
             "Sets V-Sync for every game, overriding what the game asks for. With G-Sync, 'Force on' plus an FPS limit a few frames under your refresh rate gives the smoothest result with the least delay.",
