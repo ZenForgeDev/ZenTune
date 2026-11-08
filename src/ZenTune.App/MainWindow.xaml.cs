@@ -25,7 +25,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
 
         var v = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = v is null ? "" : $"{v.Major}.{v.Minor}";
+        VersionText.Text = v is null ? "" : $"{v.Major}.{v.Minor}.{v.Build}";
 
         SizeForDpi(1180, 860);
 

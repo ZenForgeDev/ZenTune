@@ -242,34 +242,46 @@ internal sealed partial class DriverSettingsPage : UserControl
 
             DriverOption? option = label == defaultLabel ? null : setting.Options.First(o => o.Label == label);
             combo.IsEnabled = false;
-            await ApplyNvidiaAsync(setting, option, exe);
-            if (setting.Id == NvidiaCatalog.VrrMode && option is { Value: 1 or 2 })
-                await EnsureGSyncActiveAsync();
+            // G-Sync needs the driver's own order of steps and a redraw of the screens, so it has its own routine
+            if (setting.Id == NvidiaCatalog.VrrMode && exe is null && option is not null)
+                await ApplyGSyncAsync(option.Value);
+            else
+                await ApplyNvidiaAsync(setting, option, exe);
             combo.IsEnabled = true;
         };
 
         if (setting.Id == NvidiaCatalog.VrrMode && setting.Custom is null)
         {
-            // G-Sync: an Apply button that switches on the driver's per-monitor switch (see EnsureGSyncActiveAsync)
+            // G-Sync: Apply runs the whole switch-on routine again for the value chosen in the list (no admin rights needed).
+            // Repair is the older way: it turns on the driver's per-monitor switch as admin (see EnsureGSyncActiveAsync).
             var apply = new Button { Content = "Apply", VerticalAlignment = VerticalAlignment.Center };
             apply.Click += async (_, _) =>
             {
-                // Apply only makes sense with G-Sync switched on in the list
-                bool wantsOn = combo.SelectedItem is string chosen &&
-                    setting.Options.Any(o => o.Label == chosen && o.Value is 1 or 2);
-                if (!wantsOn)
+                DriverOption? chosenOption = combo.SelectedItem is string chosen
+                    ? setting.Options.FirstOrDefault(o => o.Label == chosen)
+                    : null;
+                if (chosenOption is null)
                 {
                     _status.Show(InfoBarSeverity.Informational, "Choose G-Sync first",
-                        "Pick Fullscreen only or Fullscreen and windowed in the list, then press Apply.");
+                        "Pick Off, Fullscreen only or Fullscreen and windowed in the list, then press Apply.");
                     return;
                 }
                 apply.IsEnabled = false;
-                await EnsureGSyncActiveAsync(manual: true);
+                await ApplyGSyncAsync(chosenOption.Value);
                 apply.IsEnabled = true;
+            };
+            var repair = new Button { Content = "Repair (admin)", VerticalAlignment = VerticalAlignment.Center };
+            ToolTipService.SetToolTip(repair, "Only if G-Sync stays off after Apply: turns on the driver's per-monitor switch as admin. Screens go black for a second.");
+            repair.Click += async (_, _) =>
+            {
+                repair.IsEnabled = false;
+                await EnsureGSyncActiveAsync(manual: true);
+                repair.IsEnabled = true;
             };
             var gsyncPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
             gsyncPanel.Children.Add(combo);
             gsyncPanel.Children.Add(apply);
+            gsyncPanel.Children.Add(repair);
             return FrameRow(setting.Title, setting.Help, gsyncPanel);
         }
 
@@ -367,6 +379,28 @@ internal sealed partial class DriverSettingsPage : UserControl
         {
             _status.Show(InfoBarSeverity.Error, "Could not change the NVIDIA setting", ex.Message);
             await ReloadAfterAsync(exe); // show what the driver really has
+        }
+    }
+
+    /// <summary>
+    /// Switches G-Sync the way the NVIDIA Control Panel does it: settings in the driver's order with the screens redrawn
+    /// in between (see <see cref="NvidiaGSync"/>). The screens blink once or twice.
+    /// </summary>
+    private async Task ApplyGSyncAsync(uint mode)
+    {
+        try
+        {
+            _status.Show(InfoBarSeverity.Informational, "Switching G-Sync...",
+                "The screens blink once or twice. Please wait a few seconds.");
+            await Task.Run(() => NvidiaGSync.Apply(mode));
+            _status.Show(InfoBarSeverity.Success, mode == 0 ? "G-Sync is off" : "G-Sync is on",
+                (mode == 0 ? "G-Sync is switched off in the driver." : "G-Sync is switched on in the driver.") +
+                " It also needs G-Sync switched on in the monitor's own menu. You can undo it on the System check page.");
+        }
+        catch (Exception ex)
+        {
+            _status.Show(InfoBarSeverity.Error, "Could not switch G-Sync", ex.Message);
+            await LoadAsync(); // show what the driver really has
         }
     }
 

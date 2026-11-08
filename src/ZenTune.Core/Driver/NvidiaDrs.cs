@@ -216,6 +216,65 @@ public static unsafe class NvidiaDrs
         }
     }
 
+    /// <summary>
+    /// Like <see cref="Apply"/> for the global profile, but writes the settings in several steps: each group is saved on its
+    /// own in a fresh session, and <paramref name="afterGroup"/> runs after each save (with the group's number). Used for
+    /// G-Sync, where the driver wants the values in a certain order with the screens redrawn in between.
+    /// One change is recorded for all groups, so Undo puts everything back.
+    /// </summary>
+    public static void ApplyStaged(string title, IReadOnlyList<IReadOnlyList<DriverWrite>> groups, Action<int>? afterGroup = null)
+    {
+        var all = groups.SelectMany(g => g).ToList();
+        if (all.Count == 0) return;
+
+        lock (Gate)
+        {
+            ChangeRecord record;
+            using (var s = new Session())
+            {
+                var data = new Dictionary<string, string>
+                {
+                    ["Ids"] = string.Join(",", all.Select(w => w.Id).Distinct()),
+                };
+                foreach (var id in all.Select(w => w.Id).Distinct())
+                {
+                    var old = s.Get(id);
+                    data[$"Existed_{id}"] = old is null ? "0" : "1";
+                    if (old is not null) data[$"Old_{id}"] = old.Value.ToString();
+                }
+
+                // Record first, so a crash half way can still be undone
+                record = new ChangeRecord { Title = title, Kind = "nvidia-drs", Data = data };
+                ChangeJournal.Add(record);
+            }
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                try
+                {
+                    using var s = new Session();
+                    foreach (var w in groups[i])
+                    {
+                        if (w.Value is null) s.Delete(w.Id);
+                        else s.Set(w.Id, w.Value.Value);
+                    }
+                    s.Save();
+                }
+                catch
+                {
+                    // Only when nothing was saved yet is it right to drop the change from the list
+                    if (i == 0)
+                    {
+                        try { ChangeJournal.MarkUndone(record.Id); } catch { /* nothing to do */ }
+                    }
+                    throw;
+                }
+
+                afterGroup?.Invoke(i);
+            }
+        }
+    }
+
     /// <summary>Puts back what <see cref="Apply"/> changed. Called from <c>Tweaks.Undo</c>.</summary>
     public static void Undo(ChangeRecord change)
     {

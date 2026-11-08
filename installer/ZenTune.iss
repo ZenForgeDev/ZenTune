@@ -1,6 +1,6 @@
 ; Inno Setup script for ZenTune. Built by byggsetup.bat (installer\bygg-setup.ps1), which passes /DAppVersion.
 #ifndef AppVersion
-  #define AppVersion "0.6.0"
+  #define AppVersion "0.6.2"
 #endif
 
 [Setup]

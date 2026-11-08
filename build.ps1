@@ -7,6 +7,10 @@ param([switch]$Run)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
+# The version lives in one place only: <Version> in ZenTune.App.csproj. Setup.exe and the title bar both follow it.
+$vm = [regex]::Match((Get-Content "src\ZenTune.App\ZenTune.App.csproj" -Raw), "<Version>\s*([^<\s]+)\s*</Version>")
+Write-Host ("Building ZenTune " + $(if ($vm.Success) { $vm.Groups[1].Value } else { "?" })) -ForegroundColor Cyan
+
 # Start from a clean slate so old files never mix with the new build.
 # The obj folders matter too: without this, the compiled screens (ZenTune.pri) are sometimes not rebuilt
 # after a XAML change, and the app shows the old menu.

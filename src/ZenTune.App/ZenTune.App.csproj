@@ -24,7 +24,7 @@
          Without it the app closes silently at startup. -->
     <EnableMsixTooling>true</EnableMsixTooling>
 
-    <Version>0.6.0</Version>
+    <Version>0.6.2</Version>
     <Product>ZenTune</Product>
     <Description>Free, open-source game settings optimizer</Description>
   </PropertyGroup>
