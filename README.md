@@ -60,13 +60,15 @@ Done:
 8. Cloud backup to OneDrive, Google Drive, Dropbox and Elkjøp Cloud, with optional encryption ✅
 9. Measure: verdict, key numbers and a frame time graph for before/after recordings ✅
 10. Settings and color themes ✅
+11. Driver settings for NVIDIA ✅ (G-Sync, V-Sync, frame limit, low latency, power management, shader cache, global or per game; driver update check and install)
+12. Driver backup ✅ (back up and restore Windows drivers, also to the cloud)
 
 Next:
 
 - Measure linked to presets and AI profiles: record before and after in one click
 - Thumbs-up profiles and AI settings for more games
 - More games with their own settings writers
-- Driver settings (G-Sync/FreeSync, V-Sync, Reflex/Anti-Lag)
+- Driver settings for AMD (FreeSync, Anti-Lag) and more NVIDIA settings
 - Backup checks and exporting a single backup as a zip
 - Testing on more PCs (AMD, laptops, handhelds)
 
