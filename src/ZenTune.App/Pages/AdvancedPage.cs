@@ -54,6 +54,8 @@ internal sealed partial class AdvancedPage : UserControl
         cleaner.Children.Add(_cleaner);
         body.Children.Add(Section("PC cleaner", "Remove temporary files and caches.", cleaner));
 
+        body.Children.Add(Section("Driver backup", "Back up Windows drivers, also to the cloud, and put them back after a reinstall.", DriverBackupSection()));
+
         body.Children.Add(Section("Tools", "Outside tools ZenTune can start for you.", ShutUpRow()));
 
         body.Children.Add(new TextBlock

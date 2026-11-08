@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 using ZenTune.Core.Advanced;
+using ZenTune.Core.Driver;
 using ZenTune.Core.Hardware;
 
 namespace ZenTune.Core.Changes;
@@ -296,6 +297,14 @@ public static class Tweaks
 
             case "mouse":
                 ApplyMouse(d["Values"].Split(',').Select(int.Parse).ToArray());
+                break;
+
+            case "nvidia-drs":
+                NvidiaDrs.Undo(change);
+                break;
+
+            case "nvidia-telemetry":
+                NvidiaTelemetry.Undo(change);
                 break;
 
             default:

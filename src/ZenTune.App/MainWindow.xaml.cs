@@ -146,6 +146,7 @@ public sealed partial class MainWindow : Window
                 "advanced" => new AdvancedPage(),
                 "settings" => new SettingsPage(),
                 "handheld" => new HandheldPage(),
+                "driver" => new DriverSettingsPage(),
                 "measure" => new MeasurePage(),
                 "pulse" => new PulsePage(),
                 "feedback" => new FeedbackPage(),
@@ -165,6 +166,10 @@ public sealed partial class MainWindow : Window
         else if (page is HandheldPage handheld)
         {
             handheld.Reload();
+        }
+        else if (page is DriverSettingsPage driver)
+        {
+            driver.Reload();
         }
 
         Nav.Content = page;

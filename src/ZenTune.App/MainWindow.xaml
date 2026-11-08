@@ -50,6 +50,11 @@
                         <FontIcon Glyph="&#xE990;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Driver settings" Tag="driver">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7F4;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItemHeader Content="Games" />
                 <NavigationViewItem Content="Games" Tag="games">
                     <NavigationViewItem.Icon>

@@ -31,6 +31,9 @@ public sealed class CloudSettings
 
     /// <summary>Also put ZenTune's own settings, profiles and game config backups in the backup folder, so they are uploaded too.</summary>
     public bool IncludeSettings { get; set; } = true;
+
+    /// <summary>Also upload driver backups (Advanced → Driver backup). They can be several GB, so this can be switched off.</summary>
+    public bool IncludeDrivers { get; set; } = true;
 }
 
 /// <summary>
@@ -141,6 +144,7 @@ public static class CloudSync
 
                 var args = new List<string> { "copy", source, UploadTarget(remote, encrypted) };
                 args.AddRange(CommonArgs);
+                if (!s.IncludeDrivers) args.AddRange(["--exclude", "Drivers/**"]);
 
                 var r = await Rclone.RunAsync(args, TimeSpan.FromHours(6), ct, line => progress?.Invoke($"{label}: {line}"));
                 if (r.Ok) ok.Add(label + (encrypted ? " (encrypted)" : ""));
@@ -202,6 +206,66 @@ public static class CloudSync
             if (!r.Ok) throw new InvalidOperationException(r.ErrorSummary);
 
             var done = "Download finished";
+            SaveLast(done);
+            return done;
+        }
+        finally
+        {
+            Gate.Release();
+        }
+    }
+
+    /// <summary>The PC names that have backups in the chosen cloud account (the folders in ZenTune-backup).</summary>
+    public static async Task<List<string>> ListPcsAsync(CancellationToken ct = default)
+    {
+        var s = Load();
+        await Gate.WaitAsync(ct);
+        try
+        {
+            Check();
+            if (string.IsNullOrWhiteSpace(s.Remote)) throw new InvalidOperationException("Connect a cloud account first.");
+
+            var args = new List<string> { "lsf", DownloadSource(s.Remote, s.For(s.Remote).Encrypted), "--dirs-only" };
+            var r = await Rclone.RunAsync(args, TimeSpan.FromMinutes(2), ct);
+            if (!r.Ok) throw new InvalidOperationException(r.ErrorSummary);
+
+            return r.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim().TrimEnd('/'))
+                .Where(l => l.Length > 0)
+                .OrderBy(l => l, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        finally
+        {
+            Gate.Release();
+        }
+    }
+
+    /// <summary>Copies only the driver backups of one PC from the cloud to the local backup folder (nothing local is replaced by older files).</summary>
+    public static async Task<string> DownloadDriversAsync(string pc, Action<string>? progress = null, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(pc) || pc.IndexOfAny(['/', '\\', ':', '"', '*', '?', '<', '>', '|']) >= 0 || pc.Contains(".."))
+            throw new InvalidOperationException("That is not a valid PC name.");
+
+        var s = Load();
+        await Gate.WaitAsync(ct);
+        try
+        {
+            Check();
+            if (string.IsNullOrWhiteSpace(s.Remote)) throw new InvalidOperationException("Connect a cloud account first.");
+
+            bool encrypted = s.For(s.Remote).Encrypted;
+            string from = encrypted ? $"{s.Remote}-crypt:{pc}/Drivers" : $"{s.Remote}:ZenTune-backup/{pc}/Drivers";
+            string to = Path.Combine(BackupLocation.BackupFolder, pc, "Drivers");
+            Directory.CreateDirectory(to);
+
+            var args = new List<string> { "copy", from, to, "--update" };
+            args.AddRange(CommonArgs);
+
+            var r = await Rclone.RunAsync(args, TimeSpan.FromHours(6), ct, line => progress?.Invoke(line));
+            if (!r.Ok) throw new InvalidOperationException(r.ErrorSummary);
+
+            var done = $"Driver backups from {pc} downloaded";
             SaveLast(done);
             return done;
         }
